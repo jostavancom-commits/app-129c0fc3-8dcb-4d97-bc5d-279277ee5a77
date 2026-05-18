@@ -1,1 +1,36 @@
-<div id="root"></div><script type="module" src="/src/main.jsx"></script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Waitlist</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  
+<script>
+window.__JOSTAVANT_APP_ID__ = "129c0fc3-8dcb-4d97-bc5d-279277ee5a77";
+window.onerror = function(msg, src, line, col, err) {
+  fetch("https://ysvgomzdkoggvdhdzofs.supabase.co/functions/v1/runtime-log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      app_id: window.__JOSTAVANT_APP_ID__,
+      message: msg, stack: err ? err.stack : "", file: src, line: line
+    })
+  }).catch(function(){});
+};
+window.analytics = {
+  track: (event, props) => navigator.sendBeacon(
+    "https://ysvgomzdkoggvdhdzofs.supabase.co/functions/v1/analytics-ingest",
+    JSON.stringify({ app_id: window.__JOSTAVANT_APP_ID__, type: "track", event, props })
+  ),
+  page: (name) => navigator.sendBeacon(
+    "https://ysvgomzdkoggvdhdzofs.supabase.co/functions/v1/analytics-ingest",
+    JSON.stringify({ app_id: window.__JOSTAVANT_APP_ID__, type: "page", name })
+  )
+};
+</script></body>
+</html>
