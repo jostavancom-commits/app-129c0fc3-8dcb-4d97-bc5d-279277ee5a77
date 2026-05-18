@@ -1,0 +1,58 @@
+name: Build
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build'
+        required: false
+        default: 'ai/dev'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'ai/dev' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install
+
+      - name: Run seed script if exists
+        run: |
+          if [ -f "seed.js" ]; then node seed.js; fi
+        env:
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          CF_API_TOKEN: ${{ vars.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
+
+      - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.CF_PROJECT_NAME }}.pages.dev
+          VITE_JOSTAVANT_APP_ID: ${{ vars.JOSTAVANT_APP_ID }}
+          VITE_JOSTAVANT_AUTH_BASE_URL: ${{ vars.JOSTAVANT_AUTH_BASE_URL }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ vars.CF_API_TOKEN }}
+          accountId: ${{ vars.CF_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PROJECT_NAME }}
+          directory: dist
+
+      - name: Notify webhook — success
+        if: success()
+        run: |
+          curl -X POST "${{ vars.SUPABASE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"job_id":"${{ vars.JOB_ID }}","success":true,"run_id":"${{ github.run_id }}"}'
+
+      - name: Notify webhook — failure
+        if: failure()
+        run: |
+          curl -X POST "${{ vars.SUPABASE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"job_id\":\"${{ vars.JOB_ID }}\",\"success\":false,\"run_id\":\"${{ github.run_id }}\",\"errors\":[\"Build failed\"]}"
